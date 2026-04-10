@@ -48,14 +48,9 @@ router.post("/start", async (req, res) => {
     }
 
     const sessionObj = session.toObject();
-    // Client: ids + question URLs only. Geometry, rewards, answers stay server-side / frontend map.
+    // Client: puzzle ids only for zones; question links via POST /puzzle/get when player opens a puzzle.
     const { puzzles, ...safeSession } = sessionObj;
-    const assignedPuzzles = (puzzles as { id: string; question: string }[]).map((p) => ({
-      id: p.id,
-      question: p.question,
-    }));
-    safeSession.assignedPuzzleIds = assignedPuzzles.map((p) => p.id);
-    safeSession.assignedPuzzles = assignedPuzzles;
+    safeSession.assignedPuzzleIds = (puzzles as { id: string }[]).map((p) => p.id);
 
     res.status(200).json({ success: true, data: safeSession });
   } catch (error) {
@@ -91,7 +86,7 @@ router.post("/update", async (req, res) => {
   }
 });
 
-// C. POST /api/session/puzzle/get — optional; question links are also on session start. Never exposes correctAnswer.
+// C. POST /api/session/puzzle/get — question link when player opens a zone (e.g. press E). Never exposes correctAnswer.
 router.post("/puzzle/get", async (req, res) => {
   try {
     await connectToDatabase();
