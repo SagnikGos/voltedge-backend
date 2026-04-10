@@ -42,7 +42,15 @@ const SessionSchema = new Schema({
   worldHeight: { type: Number, default: 3000 },
   playerStart: { x: { type: Number, default: 1500 }, y: { type: Number, default: 1500 } },
   puzzles: { type: Array, default: [] },
-  inventory: { type: Array, default: [] },
+  inventory: {
+    type: [
+      {
+        itemId: { type: String, required: true },
+        quantity: { type: Number, required: true },
+      },
+    ],
+    default: () => [{ itemId: 'wire', quantity: 99 }],
+  },
   placedItems: { type: Array, default: [] },
   solvedPuzzleIds: { type: [String], default: [] },
   puzzleSolveTimestamps: { type: Schema.Types.Mixed, default: {} },

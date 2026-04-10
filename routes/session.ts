@@ -2,6 +2,7 @@ import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import connectToDatabase from "../lib/db.js";
 import Session from "../models/Session.js";
+import { sanitizeRewardItems } from "../data/frontendItems.js";
 import { allPuzzles, shift1Pool, shift2Pool } from "../data/puzzles.js";
 import { getCurrentShift } from "../lib/shiftState.js";
 
@@ -23,7 +24,10 @@ router.post("/start", async (req, res) => {
       const pool = shift === 1 ? shift1Pool : shift2Pool;
       const shuffled = [...pool].sort(() => 0.5 - Math.random());
       const selectedIds = shuffled.slice(0, 10);
-      const selectedPuzzles = selectedIds.map(id => allPuzzles[id]);
+      const selectedPuzzles = selectedIds.map((id) => {
+        const p = allPuzzles[id];
+        return { ...p, rewardItems: sanitizeRewardItems(p.rewardItems) };
+      });
 
       session = new Session({
         sessionId: uuidv4(),
@@ -34,7 +38,7 @@ router.post("/start", async (req, res) => {
         worldHeight: 3000,
         playerStart: { x: 1500, y: 1500 },
         puzzles: selectedPuzzles,
-        inventory: [],
+        inventory: [{ itemId: "wire", quantity: 99 }],
         placedItems: [],
         solvedPuzzleIds: [],
         puzzleSolveTimestamps: {},
@@ -44,9 +48,14 @@ router.post("/start", async (req, res) => {
     }
 
     const sessionObj = session.toObject();
-    // Only send puzzle IDs — no locations, no questions, no answers
+    // Client: ids + question URLs only. Geometry, rewards, answers stay server-side / frontend map.
     const { puzzles, ...safeSession } = sessionObj;
-    safeSession.assignedPuzzleIds = puzzles.map((p: any) => p.id);
+    const assignedPuzzles = (puzzles as { id: string; question: string }[]).map((p) => ({
+      id: p.id,
+      question: p.question,
+    }));
+    safeSession.assignedPuzzleIds = assignedPuzzles.map((p) => p.id);
+    safeSession.assignedPuzzles = assignedPuzzles;
 
     res.status(200).json({ success: true, data: safeSession });
   } catch (error) {
@@ -82,7 +91,7 @@ router.post("/update", async (req, res) => {
   }
 });
 
-// C. POST /api/session/puzzle/get — reveal question when player reaches a zone
+// C. POST /api/session/puzzle/get — optional; question links are also on session start. Never exposes correctAnswer.
 router.post("/puzzle/get", async (req, res) => {
   try {
     await connectToDatabase();
@@ -116,7 +125,7 @@ router.post("/puzzle/get", async (req, res) => {
   }
 });
 
-// D. POST /api/session/puzzle/verify
+// D. POST /api/session/puzzle/verify — checks answer server-side only; response never includes the answer.
 router.post("/puzzle/verify", async (req, res) => {
   try {
     await connectToDatabase();
@@ -154,13 +163,15 @@ router.post("/puzzle/verify", async (req, res) => {
     }
     (session.puzzleSolveTimestamps as any)[puzzleId] = new Date();
     
-    puzzle.rewardItems.forEach((reward: any) => {
-        const existingItem = session.inventory.find((i: any) => i.itemId === reward.itemId);
-        if (existingItem) {
-            existingItem.quantity += reward.quantity;
-        } else {
-            session.inventory.push({ itemId: reward.itemId, quantity: reward.quantity });
-        }
+    sanitizeRewardItems(puzzle.rewardItems ?? []).forEach((reward) => {
+      const existingItem = session.inventory.find(
+        (i: { itemId: string }) => i.itemId === reward.itemId,
+      );
+      if (existingItem) {
+        existingItem.quantity += reward.quantity;
+      } else {
+        session.inventory.push({ itemId: reward.itemId, quantity: reward.quantity });
+      }
     });
 
     session.markModified("inventory");
@@ -168,11 +179,11 @@ router.post("/puzzle/verify", async (req, res) => {
     session.markModified("solvedPuzzleIds");
     await session.save();
 
-    res.status(200).json({ 
-        success: true, 
-        inventory: session.inventory,
-        solvedPuzzleIds: session.solvedPuzzleIds,
-        message: "Correct answer!"
+    res.status(200).json({
+      success: true,
+      inventory: session.inventory,
+      solvedPuzzleIds: session.solvedPuzzleIds,
+      message: "Correct answer!",
     });
 
   } catch (error) {
