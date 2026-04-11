@@ -25,6 +25,8 @@ export interface ISession extends Document {
   }>;
   solvedPuzzleIds: string[];
   puzzleSolveTimestamps: Record<string, Date>;
+  /** Set by admin after manual circuit verification. */
+  circuitCorrect?: boolean;
   circuitCompletedAt: Date | null;
 }
 
@@ -49,6 +51,7 @@ const SessionSchema = new Schema({
   placedItems: { type: Array, default: [] },
   solvedPuzzleIds: { type: [String], default: [] },
   puzzleSolveTimestamps: { type: Schema.Types.Mixed, default: {} },
+  circuitCorrect: { type: Boolean, default: false },
   circuitCompletedAt: { type: Date, default: null },
 }, { timestamps: true });
 

@@ -2,6 +2,15 @@ import { Router } from "express";
 import { getCurrentShift, setCurrentShift } from "../lib/shiftState.js";
 import connectToDatabase from "../lib/db.js";
 import Session from "../models/Session.js";
+import {
+  computeComponentsEarned,
+  SHIFT_TOTAL_COMPONENTS,
+} from "../data/componentMilestones.js";
+import {
+  pickPuzzlesForShift,
+  freshSessionProgressFields,
+  TOTAL_PUZZLES,
+} from "../lib/sessionPuzzles.js";
 
 const router = Router();
 
@@ -30,6 +39,189 @@ router.post("/shift", (req, res) => {
   setCurrentShift(shift);
   console.log(`🔄 Shift changed to: ${shift}`);
   res.status(200).json({ success: true, currentShift: shift });
+});
+
+// GET /api/admin/sessions — all teams / sessions
+router.get("/sessions", async (_req, res) => {
+  try {
+    await connectToDatabase();
+    const sessions = await Session.find().sort({ createdAt: -1 }).lean();
+
+    const sessionsOut = sessions.map((s) => {
+      const solvedCount = s.solvedPuzzleIds?.length ?? 0;
+      const tsMap = (s.puzzleSolveTimestamps ?? {}) as Record<string, unknown>;
+      const solveDetails: { puzzleId: string; solvedAt: string | null }[] = [];
+      for (const id of s.solvedPuzzleIds ?? []) {
+        const raw = tsMap[id];
+        const d = raw ? new Date(raw as string | Date) : null;
+        solveDetails.push({
+          puzzleId: id,
+          solvedAt: d && !isNaN(d.getTime()) ? d.toISOString() : null,
+        });
+      }
+
+      return {
+        sessionId: s.sessionId,
+        teamName: s.teamName,
+        teamLeadName: s.teamLeadName,
+        shift: s.shift,
+        solvedPuzzleIds: s.solvedPuzzleIds ?? [],
+        solveDetails,
+        totalPuzzles: TOTAL_PUZZLES,
+        inventory: s.inventory ?? [],
+        placedItems: s.placedItems ?? [],
+        componentsEarned: computeComponentsEarned(s.shift, solvedCount),
+        totalComponents: SHIFT_TOTAL_COMPONENTS[s.shift] ?? 0,
+        circuitCorrect: !!(s as { circuitCorrect?: boolean }).circuitCorrect,
+        circuitCompletedAt: s.circuitCompletedAt
+          ? new Date(s.circuitCompletedAt).toISOString()
+          : null,
+        createdAt: (s as { createdAt?: Date }).createdAt
+          ? new Date((s as { createdAt: Date }).createdAt).toISOString()
+          : null,
+        updatedAt: (s as { updatedAt?: Date }).updatedAt
+          ? new Date((s as { updatedAt: Date }).updatedAt).toISOString()
+          : null,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      currentShift: getCurrentShift(),
+      totalSessions: sessionsOut.length,
+      sessions: sessionsOut,
+    });
+  } catch (error) {
+    console.error("Error listing sessions:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// POST /api/admin/session/mark-circuit
+router.post("/session/mark-circuit", async (req, res) => {
+  try {
+    await connectToDatabase();
+    const { sessionId, correct } = req.body ?? {};
+    if (!sessionId || typeof correct !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "sessionId and correct (boolean) are required",
+      });
+    }
+
+    const session = await Session.findOne({ sessionId });
+    if (!session) {
+      return res.status(404).json({ success: false, message: "Session not found" });
+    }
+
+    if (correct) {
+      session.circuitCorrect = true;
+      if (!session.circuitCompletedAt) {
+        session.circuitCompletedAt = new Date();
+      }
+    } else {
+      session.circuitCorrect = false;
+      session.circuitCompletedAt = null;
+    }
+
+    await session.save();
+
+    res.status(200).json({
+      success: true,
+      circuitCorrect: session.circuitCorrect,
+      circuitCompletedAt: session.circuitCompletedAt
+        ? session.circuitCompletedAt.toISOString()
+        : null,
+    });
+  } catch (error) {
+    console.error("Error marking circuit:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// POST /api/admin/session/reset — reset progress, new random puzzles for same shift
+router.post("/session/reset", async (req, res) => {
+  try {
+    await connectToDatabase();
+    const { sessionId } = req.body ?? {};
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: "sessionId is required" });
+    }
+
+    const session = await Session.findOne({ sessionId });
+    if (!session) {
+      return res.status(404).json({ success: false, message: "Session not found" });
+    }
+
+    const progress = freshSessionProgressFields();
+    session.puzzles = pickPuzzlesForShift(session.shift);
+    session.inventory = progress.inventory;
+    session.placedItems = progress.placedItems;
+    session.solvedPuzzleIds = progress.solvedPuzzleIds;
+    session.puzzleSolveTimestamps = progress.puzzleSolveTimestamps;
+    session.circuitCorrect = progress.circuitCorrect;
+    session.circuitCompletedAt = progress.circuitCompletedAt;
+
+    session.markModified("puzzles");
+    session.markModified("inventory");
+    session.markModified("placedItems");
+    session.markModified("solvedPuzzleIds");
+    session.markModified("puzzleSolveTimestamps");
+    await session.save();
+
+    res.status(200).json({
+      success: true,
+      assignedPuzzleIds: session.puzzles.map((p: { id: string }) => p.id),
+    });
+  } catch (error) {
+    console.error("Error resetting session:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// POST /api/admin/session/change-shift — change shift + full reset + new puzzles
+router.post("/session/change-shift", async (req, res) => {
+  try {
+    await connectToDatabase();
+    const { sessionId, shift } = req.body ?? {};
+    if (!sessionId || (shift !== 1 && shift !== 2)) {
+      return res.status(400).json({
+        success: false,
+        message: "sessionId and shift (1 or 2) are required",
+      });
+    }
+
+    const session = await Session.findOne({ sessionId });
+    if (!session) {
+      return res.status(404).json({ success: false, message: "Session not found" });
+    }
+
+    const progress = freshSessionProgressFields();
+    session.shift = shift;
+    session.puzzles = pickPuzzlesForShift(shift);
+    session.inventory = progress.inventory;
+    session.placedItems = progress.placedItems;
+    session.solvedPuzzleIds = progress.solvedPuzzleIds;
+    session.puzzleSolveTimestamps = progress.puzzleSolveTimestamps;
+    session.circuitCorrect = progress.circuitCorrect;
+    session.circuitCompletedAt = progress.circuitCompletedAt;
+
+    session.markModified("puzzles");
+    session.markModified("inventory");
+    session.markModified("placedItems");
+    session.markModified("solvedPuzzleIds");
+    session.markModified("puzzleSolveTimestamps");
+    await session.save();
+
+    res.status(200).json({
+      success: true,
+      shift: session.shift,
+      assignedPuzzleIds: session.puzzles.map((p: { id: string }) => p.id),
+    });
+  } catch (error) {
+    console.error("Error changing session shift:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 });
 
 // ─────────────────────────────────────────────────────────

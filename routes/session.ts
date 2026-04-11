@@ -2,8 +2,8 @@ import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import connectToDatabase from "../lib/db.js";
 import Session from "../models/Session.js";
-import { allPuzzles, shift1Pool, shift2Pool } from "../data/puzzles.js";
 import { getCurrentShift } from "../lib/shiftState.js";
+import { pickPuzzlesForShift, TOTAL_PUZZLES } from "../lib/sessionPuzzles.js";
 import {
   SHIFT_MILESTONES,
   SHIFT_TOTAL_COMPONENTS,
@@ -11,8 +11,6 @@ import {
 } from "../data/componentMilestones.js";
 
 const router = Router();
-
-const TOTAL_PUZZLES = 10;
 
 // A. POST /api/session/start
 router.post("/start", async (req, res) => {
@@ -27,14 +25,7 @@ router.post("/start", async (req, res) => {
 
     if (!session) {
       const shift = getCurrentShift();
-      const pool = shift === 1 ? shift1Pool : shift2Pool;
-      const shuffled = [...pool].sort(() => 0.5 - Math.random());
-      const selectedIds = shuffled.slice(0, TOTAL_PUZZLES);
-      const selectedPuzzles = selectedIds.map((id) => {
-        const p = allPuzzles[id];
-        if (!p) throw new Error(`Puzzle ${id} not found in allPuzzles`);
-        return { ...p };
-      });
+      const selectedPuzzles = pickPuzzlesForShift(shift);
 
       session = new Session({
         sessionId: uuidv4(),
@@ -49,6 +40,7 @@ router.post("/start", async (req, res) => {
         placedItems: [],
         solvedPuzzleIds: [],
         puzzleSolveTimestamps: {},
+        circuitCorrect: false,
         circuitCompletedAt: null,
       });
       await session.save();
@@ -68,6 +60,7 @@ router.post("/start", async (req, res) => {
     safeSession.totalPuzzles = TOTAL_PUZZLES;
     safeSession.totalComponents = totalComponents;
     safeSession.componentsEarned = componentsEarned;
+    safeSession.circuitCorrect = !!(session as any).circuitCorrect;
 
     res.status(200).json({ success: true, data: safeSession });
   } catch (error) {
@@ -80,15 +73,23 @@ router.post("/start", async (req, res) => {
 router.post("/update", async (req, res) => {
   try {
     await connectToDatabase();
-    const { sessionId, placedItems } = req.body;
+    const { sessionId, placedItems, inventory, solvedPuzzleIds } = req.body;
     
     if (!sessionId || !placedItems) {
       return res.status(400).json({ success: false, message: "Missing sessionId or placedItems" });
     }
 
+    const $set: Record<string, unknown> = { placedItems };
+    if (Array.isArray(inventory)) {
+      $set.inventory = inventory;
+    }
+    if (Array.isArray(solvedPuzzleIds)) {
+      $set.solvedPuzzleIds = solvedPuzzleIds;
+    }
+
     const session = await Session.findOneAndUpdate(
       { sessionId },
-      { $set: { placedItems } },
+      { $set },
       { returnDocument: 'after' }
     );
 
@@ -223,8 +224,8 @@ router.post("/puzzle/verify", async (req, res) => {
   }
 });
 
-// E. POST /api/session/circuit/complete — record circuit completion time
-router.post("/circuit/complete", async (req, res) => {
+// E. POST /api/session/circuit/check — whether a judge marked the circuit correct
+router.post("/circuit/check", async (req, res) => {
   try {
     await connectToDatabase();
     const { sessionId } = req.body ?? {};
@@ -238,22 +239,27 @@ router.post("/circuit/complete", async (req, res) => {
       return res.status(404).json({ success: false, message: "Session not found" });
     }
 
-    if (session.circuitCompletedAt) {
-      return res.status(400).json({ success: false, message: "Circuit already completed", completedAt: session.circuitCompletedAt });
-    }
-
-    session.circuitCompletedAt = new Date();
-    await session.save();
-
+    const circuitCorrect = !!(session as any).circuitCorrect;
     res.status(200).json({
       success: true,
-      message: "Circuit completed!",
-      completedAt: session.circuitCompletedAt,
+      circuitCorrect,
+      completedAt: session.circuitCompletedAt
+        ? new Date(session.circuitCompletedAt).toISOString()
+        : undefined,
     });
   } catch (error) {
-    console.error("Error completing circuit:", error);
+    console.error("Error checking circuit:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
+});
+
+// Deprecated: circuit completion is set by admin via /api/admin/session/mark-circuit
+router.post("/circuit/complete", (_req, res) => {
+  res.status(410).json({
+    success: false,
+    message:
+      "Circuit approval is done by a judge in the admin panel. Use POST /api/session/circuit/check after approval.",
+  });
 });
 
 // F. POST /api/session/logout
