@@ -24,6 +24,15 @@ app.get("/", (req, res) => {
 app.use("/api/session", sessionRouter);
 app.use("/api/admin", adminRouter);
 
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Not Found",
+    method: req.method,
+    path: req.originalUrl,
+  });
+});
+
 // Only listen locally if not on Vercel
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {

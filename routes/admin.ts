@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { getCurrentShift, setCurrentShift } from "../lib/shiftState.js";
 import connectToDatabase from "../lib/db.js";
 import Session from "../models/Session.js";
@@ -41,8 +41,7 @@ router.post("/shift", (req, res) => {
   res.status(200).json({ success: true, currentShift: shift });
 });
 
-// GET /api/admin/sessions — all teams / sessions
-router.get("/sessions", async (_req, res) => {
+async function listAllSessions(_req: Request, res: Response) {
   try {
     await connectToDatabase();
     const sessions = await Session.find().sort({ createdAt: -1 }).lean();
@@ -95,7 +94,12 @@ router.get("/sessions", async (_req, res) => {
     console.error("Error listing sessions:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
-});
+}
+
+// GET /api/admin/session-list — list all teams (primary; avoids rare proxy/path issues with "sessions")
+router.get("/session-list", listAllSessions);
+// GET /api/admin/sessions — alias
+router.get("/sessions", listAllSessions);
 
 // POST /api/admin/session/mark-circuit
 router.post("/session/mark-circuit", async (req, res) => {
