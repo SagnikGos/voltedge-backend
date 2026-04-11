@@ -10,13 +10,8 @@ export interface ISession extends Document {
   playerStart: { x: number; y: number };
   puzzles: Array<{
     id: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
     question: string;
     correctAnswer: string;
-    rewardItems: Array<{ itemId: string; quantity: number }>;
   }>;
   inventory: Array<{
     itemId: string;

@@ -1,53 +1,35 @@
-import type { FrontendItemId } from "./frontendItems.js";
-
 export const allPuzzles: Record<
   string,
   {
     id: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
     question: string;
     correctAnswer: string;
-    /** `itemId` values must be keys from the frontend `COMPONENT_DEFINITIONS` (see `data/frontendItems.ts`). */
-    rewardItems: Array<{ itemId: FrontendItemId; quantity: number }>;
   }
 > = {
-  // Shift 1 — rewards use only frontend component IDs (transistor/switch/relay → igbt, bulb → solar_cell, etc.)
-  s1q1: { id: 's1q1', x: 384, y: 288, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock1', correctAnswer: 'resistor', rewardItems: [{ itemId: 'resistor', quantity: 2 }] },
-  s1q2: { id: 's1q2', x: 800, y: 576, width: 128, height: 128, question: 'https://docs.google.com/document/d/mock2', correctAnswer: 'capacitor', rewardItems: [{ itemId: 'capacitor', quantity: 2 }] },
-  s1q3: { id: 's1q3', x: 1184, y: 480, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock3', correctAnswer: 'transistor', rewardItems: [{ itemId: 'igbt', quantity: 2 }] },
-  s1q4: { id: 's1q4', x: 1984, y: 992, width: 160, height: 160, question: 'https://docs.google.com/document/d/mock4', correctAnswer: 'switch', rewardItems: [{ itemId: 'igbt', quantity: 2 }] },
-  s1q5: { id: 's1q5', x: 2496, y: 1984, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock5', correctAnswer: 'bulb', rewardItems: [{ itemId: 'solar_cell', quantity: 2 }] },
-  s1q6: { id: 's1q6', x: 1000, y: 2000, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock6', correctAnswer: 'diode', rewardItems: [{ itemId: 'diode', quantity: 1 }] },
-  s1q7: { id: 's1q7', x: 2000, y: 1000, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock7', correctAnswer: 'transformer', rewardItems: [{ itemId: 'inductor', quantity: 1 }] },
-  s1q8: { id: 's1q8', x: 400, y: 2200, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock8', correctAnswer: 'inductor', rewardItems: [{ itemId: 'inductor', quantity: 1 }] },
-  s1q9: { id: 's1q9', x: 2400, y: 400, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock9', correctAnswer: 'ammeter', rewardItems: [{ itemId: 'resistor', quantity: 1 }] },
-  s1q10: { id: 's1q10', x: 1500, y: 500, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock10', correctAnswer: 'voltmeter', rewardItems: [{ itemId: 'resistor', quantity: 1 }] },
-  s1q11: { id: 's1q11', x: 1200, y: 1500, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock11', correctAnswer: 'motor', rewardItems: [{ itemId: 'dc_source', quantity: 1 }] },
-  s1q12: { id: 's1q12', x: 1800, y: 2500, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock12', correctAnswer: 'battery', rewardItems: [{ itemId: 'dc_source', quantity: 1 }] },
-  s1q13: { id: 's1q13', x: 500, y: 800, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock13', correctAnswer: 'relay', rewardItems: [{ itemId: 'igbt', quantity: 1 }] },
-  s1q14: { id: 's1q14', x: 2200, y: 1800, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock14', correctAnswer: 'fuse', rewardItems: [{ itemId: 'wire', quantity: 1 }] },
-  s1q15: { id: 's1q15', x: 1600, y: 2800, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock15', correctAnswer: 'ground', rewardItems: [{ itemId: 'wire', quantity: 1 }] },
+  // Shift 1
+  s1q1: { id: 's1q1', question: 'https://docs.google.com/document/d/18qFORTlM8iZ50ZgF7UHKgTvVYnliGZvKdjPw2gYVKUM/edit?tab=t.0', correctAnswer: '77814e' },
+  s1q2: { id: 's1q2', question: 'https://docs.google.com/document/d/1LK4MiFZ_Nj_oNXxJve_czywfBJ9FKbECGjzGDbYNsko/edit?tab=t.0', correctAnswer: '14' },
+  s1q3: { id: 's1q3', question: 'https://docs.google.com/document/d/157aWnD8RAiPaEh7K92IkBxu8HODI8FVQJ1kmaJFblr0/edit?tab=t.0', correctAnswer: '63' },
+  s1q4: { id: 's1q4', question: 'https://docs.google.com/document/d/12ZM5wvhSsHhr9xPIwnvguTmKqvUEy9xWC6sz-9UZAZI/edit?tab=t.0', correctAnswer: '200' },
+  s1q5: { id: 's1q5', question: 'https://docs.google.com/document/d/1AmoqVk01IdtbFE47QJk8Jw1wkjCpayWRsA3gHnyHvHE/edit?tab=t.0', correctAnswer: '15' },
+  s1q6: { id: 's1q6', question: 'https://docs.google.com/document/d/1O0yU0PWKpozEOEPxqcUU_eCN7dVtv2VKkIM0q1dp3pM/edit?tab=t.0', correctAnswer: 'AC' },
+  s1q7: { id: 's1q7', question: 'https://docs.google.com/document/d/1lTrqloCCKw67a84x2lV_CVYLme1b5EUbVmo6WStttIU/edit?tab=t.0', correctAnswer: '81' },
+  s1q8: { id: 's1q8', question: 'https://docs.google.com/document/d/1k3VCndm3O254m6Ui_e4yfmiQ6rlRfr1N3KlQsK02ee8/edit?tab=t.0', correctAnswer: '17' },
+  s1q9: { id: 's1q9', question: 'https://docs.google.com/document/d/1eDf2FIxwQdvEbHOdjxfUg-4GVi8bjvbjH1pxCV4rnDY/edit?tab=t.0', correctAnswer: '0' },
+  s1q10: { id: 's1q10', question: 'https://docs.google.com/document/d/1DUksiDScbpOL67V-UqnnYeH-VN7TY-J4vJTzLwvkFaA/edit?tab=t.0', correctAnswer: '1' },
 
   // Shift 2
-  s2q1: { id: 's2q1', x: 384, y: 288, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock16', correctAnswer: 'resistor', rewardItems: [{ itemId: 'resistor', quantity: 2 }] },
-  s2q2: { id: 's2q2', x: 800, y: 576, width: 128, height: 128, question: 'https://docs.google.com/document/d/mock17', correctAnswer: 'capacitor', rewardItems: [{ itemId: 'capacitor', quantity: 2 }] },
-  s2q3: { id: 's2q3', x: 1184, y: 480, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock18', correctAnswer: 'transistor', rewardItems: [{ itemId: 'igbt', quantity: 2 }] },
-  s2q4: { id: 's2q4', x: 1984, y: 992, width: 160, height: 160, question: 'https://docs.google.com/document/d/mock19', correctAnswer: 'switch', rewardItems: [{ itemId: 'igbt', quantity: 2 }] },
-  s2q5: { id: 's2q5', x: 2496, y: 1984, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock20', correctAnswer: 'bulb', rewardItems: [{ itemId: 'solar_cell', quantity: 2 }] },
-  s2q6: { id: 's2q6', x: 1000, y: 2000, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock21', correctAnswer: 'diode', rewardItems: [{ itemId: 'diode', quantity: 1 }] },
-  s2q7: { id: 's2q7', x: 2000, y: 1000, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock22', correctAnswer: 'transformer', rewardItems: [{ itemId: 'inductor', quantity: 1 }] },
-  s2q8: { id: 's2q8', x: 400, y: 2200, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock23', correctAnswer: 'inductor', rewardItems: [{ itemId: 'inductor', quantity: 1 }] },
-  s2q9: { id: 's2q9', x: 2400, y: 400, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock24', correctAnswer: 'ammeter', rewardItems: [{ itemId: 'resistor', quantity: 1 }] },
-  s2q10: { id: 's2q10', x: 1500, y: 500, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock25', correctAnswer: 'voltmeter', rewardItems: [{ itemId: 'resistor', quantity: 1 }] },
-  s2q11: { id: 's2q11', x: 1200, y: 1500, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock26', correctAnswer: 'motor', rewardItems: [{ itemId: 'dc_source', quantity: 1 }] },
-  s2q12: { id: 's2q12', x: 1800, y: 2500, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock27', correctAnswer: 'battery', rewardItems: [{ itemId: 'dc_source', quantity: 1 }] },
-  s2q13: { id: 's2q13', x: 500, y: 800, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock28', correctAnswer: 'relay', rewardItems: [{ itemId: 'igbt', quantity: 1 }] },
-  s2q14: { id: 's2q14', x: 2200, y: 1800, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock29', correctAnswer: 'fuse', rewardItems: [{ itemId: 'wire', quantity: 1 }] },
-  s2q15: { id: 's2q15', x: 1600, y: 2800, width: 96, height: 96, question: 'https://docs.google.com/document/d/mock30', correctAnswer: 'ground', rewardItems: [{ itemId: 'wire', quantity: 1 }] },
+  s2q1: { id: 's2q1', question: 'https://docs.google.com/document/d/1e4sxz6jVJHnLKJciMmAlagGR6gyjr59r4LUSn5MRpc4/edit?tab=t.0', correctAnswer: '40' },
+  s2q2: { id: 's2q2', question: 'https://docs.google.com/document/d/1pvnr8WpYQqUwrNNemgjg0NA1K12j1I7qRJBDlQsSzZU/edit?usp=sharing', correctAnswer: '601' },
+  s2q3: { id: 's2q3', question: 'https://docs.google.com/document/d/1F3Jy2rPpbBnKURChc8LShLabFdHeNQelPhsNG1usPGE/edit?tab=t.0', correctAnswer: '5' },
+  s2q4: { id: 's2q4', question: 'https://docs.google.com/document/d/1-lmYjmDirAS7pczFbqJM-l0YoINzbVwhYnLMMtEtPVk/edit?tab=t.0', correctAnswer: 'CC2504' },
+  s2q5: { id: 's2q5', question: 'https://docs.google.com/document/d/18qFORTlM8iZ50ZgF7UHKgTvVYnliGZvKdjPw2gYVKUM/edit?tab=t.0', correctAnswer: '77814e' },
+  s2q6: { id: 's2q6', question: 'https://docs.google.com/document/d/1OjGn604rg8pHjF39s2gRGcL3HWxPar9ufMkxjVwuJJQ/edit?tab=t.0', correctAnswer: '8' },
+  s2q7: { id: 's2q7', question: 'https://docs.google.com/document/d/1O185dowdKXxiYpKyfYMT7P-HEPnKWrKioAyOe0ABuUQ/edit?tab=t.0', correctAnswer: '255' },
+  s2q8: { id: 's2q8', question: 'https://docs.google.com/document/d/1y-5oZEXSdxya9SMxI69NIJwcA_-18f3yHLs0MZjEXrI/edit?tab=t.0', correctAnswer: '55' },
+  s2q9: { id: 's2q9', question: 'https://docs.google.com/document/d/1LJ_erJ4k9Mq-d6AQ54mo1fBPXxoDWuDN7iwgAazpczI/edit?tab=t.0', correctAnswer: '64' },
+  s2q10: { id: 's2q10', question: 'https://docs.google.com/document/d/12v-7u7XGSnScneYmFhAYrLHufkdcrFxYTO0ebZGdm4o/edit?tab=t.0', correctAnswer: '111' },
 };
 
-export const shift1Pool = ['s1q1', 's1q2', 's1q3', 's1q4', 's1q5', 's1q6', 's1q7', 's1q8', 's1q9', 's1q10', 's1q11', 's1q12', 's1q13', 's1q14', 's1q15'];
-export const shift2Pool = ['s2q1', 's2q2', 's2q3', 's2q4', 's2q5', 's2q6', 's2q7', 's2q8', 's2q9', 's2q10', 's2q11', 's2q12', 's2q13', 's2q14', 's2q15'];
+export const shift1Pool = ['s1q1', 's1q2', 's1q3', 's1q4', 's1q5', 's1q6', 's1q7', 's1q8', 's1q9', 's1q10'];
+export const shift2Pool = ['s2q1', 's2q2', 's2q3', 's2q4', 's2q5', 's2q6', 's2q7', 's2q8', 's2q9', 's2q10'];
